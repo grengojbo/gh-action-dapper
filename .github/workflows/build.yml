@@ -8,9 +8,11 @@ on:
     tags:
       - 'v*'
   pull_request:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 
 jobs:
-  build:
+  build_dapper:
     runs-on: ubuntu-latest
     env:
       DOCKER_CLI_EXPERIMENTAL: "enabled"
@@ -30,14 +32,18 @@ jobs:
           make help
           lsb_release -a
           mkdir -p ./dist
-          echo "DT=$(date +'%Y-%m-%d_%H%M')" >> ./dist/dt.txt
       #    # sudo apt update
       #    # sudo apt install ccache libssl-dev u-boot-tools python-mako debhelper fakeroot gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu make device-tree-compiler
-      # - name: Setup env
-      #   run: |
-      #     echo "DT=$(date +'%Y-%m-%d_%H%M')" >> $GITHUB_ENV
-      #     echo "KERNELVER=$(make kernelversion)" >> $GITHUB_ENV
-      #     echo "BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
+      - name: Setup env
+        run: |
+          echo "DT=$(date +'%Y-%m-%d_%H%M')" >> ./dist/dt.txt
+          echo "BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
+          echo "DT=$(date +'%Y-%m-%d_%H%M')" >> $GITHUB_ENV
+        #  echo "KERNELVER=$(make kernelversion)" >> $GITHUB_ENV
+
+      - name: Print env
+        run: |
+          echo "BRANCH=$BRANCH DT=$DT"
 
       - run: "docker version"
       - run: "docker run --rm hello-world"

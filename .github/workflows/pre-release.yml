@@ -11,6 +11,7 @@ on:
 
 jobs:
   create_pre_release:
+    needs: build_dapper
     runs-on: "ubuntu-latest"
     # env:
     #   JEST_VERBOSE: ${{ secrets.JEST_VERBOSE }}
@@ -59,13 +60,14 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           artifacts: "LICENSE,*.md,dist/*"
-          # body: |
-          #   Changes in this Release: 
-          #   ${{ steps.changelog.outputs.changelog }}
+          body: |
+            Changes in this Release: 
+            ${{ steps.changelog.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
           name: Release ${{ env.GITHUB_REF_SLUG }}
           allowUpdates: true
-          prerelease: true
+          prerelease: false
+          tag: latest
 
       # - uses: "./packages/automatic-releases/"
       #   with:
