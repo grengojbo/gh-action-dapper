@@ -1,0 +1,105 @@
+---
+name: "pre-release"
+
+on:
+  push:
+    branches:
+      - "main"
+    tags-ignore:
+      - "*"
+
+jobs:
+  create_pre_release:
+    runs-on: "ubuntu-latest"
+    # env:
+    #   JEST_VERBOSE: ${{ secrets.JEST_VERBOSE }}
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      # https://github.com/actions/checkout
+      - name: "Checkout source code"
+        uses: "actions/checkout@v2"
+        with:
+          # lfs: true
+          # fetch-depth: 1
+          ref: ${{ github.head_ref }}
+      - name: Fetch Tags
+        run: |
+          git fetch --prune --unshallow --tags -f
+
+      - name: Install depencies
+        run: |
+          make help
+      #    # sudo apt update
+      #    # sudo apt install ccache libssl-dev u-boot-tools python-mako debhelper fakeroot gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu make device-tree-compiler
+      # - name: Setup env
+      #   run: |
+      #     echo "DT=$(date +'%Y-%m-%d_%H%M')" >> $GITHUB_ENV
+      #     echo "KERNELVER=$(make kernelversion)" >> $GITHUB_ENV
+      #     echo "BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
+      # - run: "yarn build"
+      # - run: "yarn jest --env=node --colors --forceExit"
+      
+      - uses: rlespinasse/github-slug-action@v2.x
+      - name: Generate Release Channel # Release Channels are named prod-<Major Release>, i.e. prod-1, prod-3
+        id: releaseChannel
+        run: |
+          RELEASE_CHANNEL=$(echo ${{ env.GITHUB_REF_SLUG }} | sed -r 's/\.[0-9]+\.[0-9]+$//')
+          echo "::set-output name=releaseChannel::$RELEASE_CHANNEL"
+      - name: Install Packages
+        run: npm install
+      - name: Get Latest Binary Version # Binary Version will be x.x.x based on the latest tag
+        id: latestBinaryVersion
+        run: |
+          # Release tag finds the lastest tag in the tree branch - i.e. prod-x.x.x
+          RELEASE_TAG=$(echo $(git describe --tags --abbrev=0))
+          # Using param substitution, we output x.x.x instead
+          echo "::set-output name=version::${RELEASE_TAG#*-}"
+      - name: Echo Version Details
+        run: |
+          echo Build number is $GITHUB_RUN_NUMBER
+          echo Latest release is ${{ steps.latestBinaryVersion.outputs.version }}
+
+      - uses: rlespinasse/github-slug-action@v2.x
+      - name: Generate Changelog
+        id: changelog
+        uses: metcalfc/changelog-generator@v0.4.0
+        with:
+          myToken: ${{ secrets.GITHUB_TOKEN }}
+          base-ref: 'v0'
+      - name: Creating Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "LICENSE,*.md"
+          body: |
+            Changes in this Release: 
+            ${{ steps.changelog.outputs.changelog }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          name: Release ${{ env.GITHUB_REF_SLUG }}
+          allowUpdates: true
+
+      # - uses: "./packages/automatic-releases/"
+      #   with:
+      #     repo_token: "${{ secrets.GITHUB_TOKEN }}"
+      #     automatic_release_tag: "latest"
+      #     prerelease: true
+      #     title: "Development Build"
+      #     files: |
+      #       packages/automatic-releases/dist/index.js
+      #       packages/keybase-notifications/dist/index.js
+      #   id: "automatic_releases"
+
+      # # marvinpinto/action-keybase-notifications
+      # # marvinpinto/action-automatic-releases
+      # # marvinpinto/action-inject-ssm-secrets
+      # - name: "Automatically mirror release artifacts"
+      #   env:
+      #     GITHUB_SUPER_TOKEN: ${{ secrets.GITHUB_SUPER_TOKEN }}
+      #   run: |
+      #     ./scripts/mirror-actions.sh "$AUTOMATIC_RELEASES_TAG"
+
+      # - uses: "./packages/keybase-notifications"
+      #   if: always()
+      #   with:
+      #     job_status: ${{ job.status }}
+      #     opensentinel_token: ${{ secrets.OSL_TOKEN }}
