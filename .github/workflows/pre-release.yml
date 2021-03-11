@@ -96,7 +96,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           # name: Release ${{ env.GITHUB_REF_SLUG }}
           allowUpdates: true
-          prerelease: tree
+          prerelease: true
           # tag: latest
 
       # - uses: "./packages/automatic-releases/"
