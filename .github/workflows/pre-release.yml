@@ -91,7 +91,7 @@ jobs:
         with:
           artifacts: "LICENSE,*.md,dist/*"
           body: |
-            Changes in this Release: 
+            Changes in this Release: ${{ env.GITHUB_REF_SLUG }}
             ${{ steps.changelog.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
           # name: Release ${{ env.GITHUB_REF_SLUG }}
